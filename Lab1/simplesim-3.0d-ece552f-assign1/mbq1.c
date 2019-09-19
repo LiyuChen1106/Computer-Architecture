@@ -7,7 +7,7 @@ int main() {
 		"addi $10, $0, 25\n\t"   // init reg2
 	
 	);
-	while (i < 1000000){
+	while (i < 10000){
 
 
 		asm(
