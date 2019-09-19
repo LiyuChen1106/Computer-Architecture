@@ -69,6 +69,14 @@
 /* ECE552 Assignment 1 - STATS COUNTERS - BEGIN */
 static counter_t sim_num_RAW_hazard_q1;
 static counter_t sim_num_RAW_hazard_q2;
+/*question 1 counters*/
+static counter_t reg_ready_q1[MD_TOTAL_REGS];
+static counter_t one_cycle_q1=0;
+static counter_t two_cycle_q1=0;
+/*question 2 counters*/
+static counter_t reg_ready_q2[MD_TOTAL_REGS];
+static counter_t one_cycle_q2=0;
+static counter_t two_cycle_q2=0;
 /* ECE552 Assignment 1 - STATS COUNTERS - END */
 
 /*
@@ -143,14 +151,23 @@ sim_reg_stats(struct stat_sdb_t *sdb)
 		   "total number of RAW hazards (q2)",
 		   &sim_num_RAW_hazard_q2, sim_num_RAW_hazard_q2, NULL);
 
+  stat_reg_counter(sdb, "one_cycle_q1",
+		   "total number of one cycle RAW hazards (q1)",
+		   &one_cycle_q1, one_cycle_q1, NULL);
+  
+  stat_reg_counter(sdb, "two_cycle_q1",
+		   "total number of two cycle RAW hazards (q1)",
+		   &two_cycle_q1, two_cycle_q1, NULL);  
+  
   stat_reg_formula(sdb, "CPI_from_RAW_hazard_q1",
 		   "CPI from RAW hazard (q1)",
-		   "1" /* ECE552 - MUST ADD YOUR FORMULA */, NULL);
+		   "2 * one_cycle_q1 / sim_num_insn +3 * two_cycle_q1/sim_num_insn+1-sim_num_RAW_hazard_q1/sim_num_insn" /* ECE552 - MUST ADD YOUR FORMULA */, NULL);
 
   stat_reg_formula(sdb, "CPI_from_RAW_hazard_q2",
 		   "CPI from RAW hazard (q2)",
 		   "1" /* ECE552 - MUST ADD YOUR FORMULA */, NULL);
 
+  
   /* ECE552 Assignment 1 - END CODE */
 
   ld_reg_stats(sdb);
@@ -312,7 +329,7 @@ sim_main(void)
   enum md_opcode op;
   register int is_write;
   enum md_fault_type fault;
-
+  
   fprintf(stderr, "sim: ** starting functional simulation **\n");
 
   /* set up initial default next PC */
@@ -322,7 +339,13 @@ sim_main(void)
   if (dlite_check_break(regs.regs_PC, /* !access */0, /* addr */0, 0, 0))
     dlite_main(regs.regs_PC - sizeof(md_inst_t),
 	       regs.regs_PC, sim_num_insn, &regs, mem);
-
+  
+  
+  /* ECE552 Assignment 1 - BEGIN CODE */
+  int r_out[2], r_in[3];
+  int simucycle_q1=sim_num_insn; //to simulate cycle difference for instruction
+  
+  /* ECE552 Assignment 1 - END CODE */
   while (TRUE)
     {
 
@@ -337,7 +360,10 @@ sim_main(void)
 
       /* keep an instruction count */
       sim_num_insn++;
-
+      /* ECE552 Assignment 1 - BEGIN CODE */
+      
+      simucycle_q1++;
+      /* ECE552 Assignment 1 - END CODE */
       /* set default reference address and access mode */
       addr = 0; is_write = FALSE;
 
@@ -348,13 +374,16 @@ sim_main(void)
       MD_SET_OPCODE(op, inst);
 
       /* execute the instruction */
-
+      /* ECE552 Assignment 1 - BEGIN CODE */
       switch (op)
 	{
 #define DEFINST(OP,MSK,NAME,OPFORM,RES,FLAGS,O1,O2,I1,I2,I3)		\
 	case OP:							\
+        r_out[0] = (O1); r_out[1] = (O2);                             \
+        r_in[0] = (I1); r_in[1] = (I2); r_in[2] = (I3);               \
           SYMCAT(OP,_IMPL);						\
           break;
+        /* ECE552 Assignment 1 - END CODE */
 #define DEFLINK(OP,MSK,NAME,MASK,SHIFT)					\
         case OP:							\
           panic("attempted to execute a linking opcode");
@@ -365,7 +394,42 @@ sim_main(void)
 	default:
 	  panic("attempted to execute a bogus opcode");
       }
-
+      
+      /* ECE552 Assignment 1 - BEGIN CODE */
+      int i;
+      for (i=0;i<3;i++){
+          if(r_in[i]!=DNA&& reg_ready_q1[r_in[i]]>simucycle_q1){
+              if((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&(MD_OP_FLAGS(op) & F_STORE)&&(reg_ready_q1[r_in[i]]-simucycle_q1==2)){
+                  one_cycle_q1++;
+                  break;
+              }
+              else if((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&(MD_OP_FLAGS(op) & F_STORE)&&(reg_ready_q1[r_in[i]]-simucycle_q1==1)){
+                  continue;
+              }
+              
+              
+              if(reg_ready_q1[r_in[i]]-simucycle_q1==1){
+                  one_cycle_q1++;
+                  break;
+              }
+              else if(reg_ready_q1[r_in[i]]-simucycle_q1==2){
+                  simucycle_q1++;
+                  two_cycle_q1++;
+                  break;
+              }
+              else{
+                  fprintf(stderr, "fault: ** zhe shi wei shen me  **\n");
+              }
+          }
+      }
+      sim_num_RAW_hazard_q1=one_cycle_q1+two_cycle_q1;
+      if(r_out[0]!=DNA)
+          reg_ready_q1[r_out[0]]=simucycle_q1+3;
+      if(r_out[1]!=DNA)
+          reg_ready_q1[r_out[1]]=simucycle_q1+3;
+      
+      /* ECE552 Assignment 1 - END CODE */
+      
       if (fault != md_fault_none)
 	fatal("fault (%d) detected @ 0x%08p", fault, regs.regs_PC);
 
