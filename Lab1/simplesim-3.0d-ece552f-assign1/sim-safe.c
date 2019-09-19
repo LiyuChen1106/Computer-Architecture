@@ -160,8 +160,8 @@ sim_reg_stats(struct stat_sdb_t *sdb) {
             "total number of one cycle RAW hazards (q2)",
             &one_cycle_q2, one_cycle_q2, NULL);
 
-    stat_reg_counter(sdb, "two_cycle_q1",
-            "total number of two cycle RAW hazards (q1)",
+    stat_reg_counter(sdb, "two_cycle_q2",
+            "total number of two cycle RAW hazards (q2)",
             &two_cycle_q2, two_cycle_q2, NULL);
 
 
@@ -429,16 +429,16 @@ sim_main(void) {
 
         /*question two*/
         for (i = 0; i < 3; i++) {
-            if (r_in[i] != DNA && reg_ready_q1[r_in[i]] > simucycle_q1) {
+            if (r_in[i] != DNA && reg_ready_q2[r_in[i]] > simucycle_q2) {
                 if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&(MD_OP_FLAGS(op) & F_STORE)) {
                     break;
                 } 
 
 
-                if (reg_ready_q2[r_in[i]] - simucycle_q1 == 1) {
+                if (reg_ready_q2[r_in[i]] - simucycle_q2 == 1) {
                     one_cycle_q2++;
                     break;
-                } else if (reg_ready_q2[r_in[i]] - simucycle_q1 == 2) {
+                } else if (reg_ready_q2[r_in[i]] - simucycle_q2 == 2) {
                     simucycle_q2++;
                     two_cycle_q2++;
                     break;
