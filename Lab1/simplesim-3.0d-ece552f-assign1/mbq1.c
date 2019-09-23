@@ -28,10 +28,10 @@ int main() {
 		"sw $9, 0($3)\n\t"		// store with no stall
 		
 		// adding some test case for load-to-use in question two, not effecting the result in question one
-		"lw 0($8), $4\n\t"
+		"lw $4, 0($8)\n\t"
 		"addi $5, $4, 20\n\t"          // load to use (two cycles)
 
-		"lw 0($6), $3\n\t"
+		"lw $3, 0($6)\n\t"
 		"sw $2, 0($7)\n\t"
 		"addi $9, $3, 12\n\t"		// load to use (one cycle)
         	);
