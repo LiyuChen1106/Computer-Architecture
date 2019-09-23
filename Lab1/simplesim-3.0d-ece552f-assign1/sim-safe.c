@@ -431,7 +431,7 @@ sim_main(void) {
         for (i = 0; i < 3; i++) {
             if (r_in[i] != DNA && reg_ready_q2[r_in[i]] > simucycle_q2) {
                 if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&(MD_OP_FLAGS(op) & F_STORE)) {
-                    break;
+                    continue;
                 } 
 
 
