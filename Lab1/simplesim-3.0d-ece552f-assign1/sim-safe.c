@@ -399,20 +399,31 @@ sim_main(void) {
         /* ECE552 Assignment 1 - BEGIN CODE */
         /*question one*/
         int i;
+        int t=0;
         for (i = 0; i < 3; i++) {
             if (r_in[i] != DNA && reg_ready_q1[r_in[i]] > simucycle_q1) {
                 if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&(MD_OP_FLAGS(op) & F_STORE)&&(reg_ready_q1[r_in[i]] - simucycle_q1 == 2)) {
                     one_cycle_q1++;
-                    break;
+                    t=1;
+                    continue;
                 } else if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&(MD_OP_FLAGS(op) & F_STORE)&&(reg_ready_q1[r_in[i]] - simucycle_q1 == 1)) {
                     continue;
                 }
 
 
                 if (reg_ready_q1[r_in[i]] - simucycle_q1 == 1) {
+                	if(t==1){
+                	one_cycle_q1--;
+                	t=0;
+                	}
+                	
                     one_cycle_q1++;
                     break;
                 } else if (reg_ready_q1[r_in[i]] - simucycle_q1 == 2) {
+                    if(t==1){
+                	one_cycle_q1--;
+                	t=0;
+                	}
                     simucycle_q1++;
                     two_cycle_q1++;
                     break;
@@ -421,6 +432,7 @@ sim_main(void) {
                 }
             }
         }
+        t=0;
         sim_num_RAW_hazard_q1 = one_cycle_q1 + two_cycle_q1;
         if (r_out[0] != DNA)
             reg_ready_q1[r_out[0]] = simucycle_q1 + 3;
