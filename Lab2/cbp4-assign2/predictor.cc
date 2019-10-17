@@ -20,16 +20,15 @@ bool GetPrediction_2bitsat(UINT32 PC) {
         return NOT_TAKEN;
     else if(check==2||check==3)
         return TAKEN;
-                
 }
 
 void UpdatePredictor_2bitsat(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {
     UINT32 id= PC % 4096;
     int check=two_bit_pt[id];
     if(resolveDir==false && check>0)
-        two_bit_pt[id]++;
-    else if(resolveDir==true && check<3)
         two_bit_pt[id]--;
+    else if(resolveDir==true && check<3)
+        two_bit_pt[id]++;
         
 }
 
