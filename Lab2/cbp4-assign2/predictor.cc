@@ -91,18 +91,6 @@ void UpdatePredictor_2level(UINT32 PC, bool resolveDir, bool predDir, UINT32 bra
 // openend
 /////////////////////////////////////////////////////////////
 
-void InitPredictor_openend() {
-
-}
-
-bool GetPrediction_openend(UINT32 PC) {
-
-  return TAKEN;
-}
-
-void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {
-
-}
 //maximum 131072 bits 
 int const y=88;
 int const z=88;
@@ -136,7 +124,6 @@ void InitPredictor_openend() {
 }
 
 bool GetPrediction_openend(UINT32 PC) {
-    h++;
     int id = PC % y;
     int check = bias[id];
     for (int i = 0; i < z; i++) {
