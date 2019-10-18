@@ -87,20 +87,88 @@ void UpdatePredictor_2level(UINT32 PC, bool resolveDir, bool predDir, UINT32 bra
     
 }
 
+int h=0;
 /////////////////////////////////////////////////////////////
 // openend
 /////////////////////////////////////////////////////////////
 
+ //use the perceptrons branch predictors which is y=wx+b
+
+//maximum 131072 bits 
+//maximum 131072 bits 
+int const y=88;
+int const z=88;
+short weight[y][z];//88*88*16 =123904
+short bias[y]; //smaller than 32768 88*16=1408
+short x[z]; //global brach history register works in circular buffer 88*16=1408
+int position;
+////y=wx+b
+
 void InitPredictor_openend() {
+    for (int i = 0; i < y; i++) {
+        for (int j = 0; j < z; j++) {
+            weight[i][j] = 0;
+        }
+    }
+
+    for (int i = 0; i < y; i++) {
+        bias[i] = 1;
+    }
+
+    for (int i = 0; i < z; i++) {
+        x[i] = -1;
+
+    }
+
+
+    position = 0; //start at the first position
+    
+    
 
 }
 
 bool GetPrediction_openend(UINT32 PC) {
-
-  return TAKEN;
+    h++;
+    int id = PC % y;
+    int check = bias[id];
+    for (int i = 0; i < z; i++) {
+        check = check + weight[id][i] * x[(position + i) % z];
+    }
+    if (check >= 0)
+        return TAKEN;
+    else
+        return NOT_TAKEN;
 }
 
 void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {
+    uint8_t id = PC % y;
+    int check = bias[id];
+    for (int i = 0; i < z; i++) {
+        check = check + weight[id][i] * x[(position + i) % z];
+    }
+    int t = 0;
+    if (resolveDir)
+        t = 1;
+    else
+        t = -1;
+
+    if ((abs(check) < 500) || predDir != resolveDir) {
+            //  if(h<100){
+    //    printf("h: %d %d \n",h,check);
+          //    printf("w: %d \n",weight[id][0]);
+          //    printf("x: %d \n", x[position]);
+          //    }
+        if (abs(bias[id]) < 32767 - t)
+            bias[id] += t;
+        for (int i = 0; i < z; i++) {
+            if (abs(weight[id][i]+t * x[(position + i) % z]) < 32767 )
+                weight[id][i] = weight[id][i] + t * x[(position + i) % z];
+        }
+    }
+
+    x[position] = t;
+   // if(h<100)
+      //  printf("check: %d\n",x[position]);
+    position = (1 + position) % z;
 
 }
-
