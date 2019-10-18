@@ -87,15 +87,19 @@ void UpdatePredictor_2level(UINT32 PC, bool resolveDir, bool predDir, UINT32 bra
     
 }
 
+int h=0;
 /////////////////////////////////////////////////////////////
 // openend
 /////////////////////////////////////////////////////////////
 
+ //use the perceptrons branch predictors which is y=wx+b
+
+//maximum 131072 bits 
 //maximum 131072 bits 
 int const y=88;
 int const z=88;
 short weight[y][z];//88*88*16 =123904
-short bias[y]; //smaller than 65536 88*16=1408
+short bias[y]; //smaller than 32768 88*16=1408
 short x[z]; //global brach history register works in circular buffer 88*16=1408
 int position;
 ////y=wx+b
@@ -124,6 +128,7 @@ void InitPredictor_openend() {
 }
 
 bool GetPrediction_openend(UINT32 PC) {
+    h++;
     int id = PC % y;
     int check = bias[id];
     for (int i = 0; i < z; i++) {
@@ -147,16 +152,16 @@ void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 br
     else
         t = -1;
 
-    if ((abs(check) < 200) || predDir != resolveDir) {
+    if ((abs(check) < 500) || predDir != resolveDir) {
             //  if(h<100){
     //    printf("h: %d %d \n",h,check);
           //    printf("w: %d \n",weight[id][0]);
           //    printf("x: %d \n", x[position]);
           //    }
-        if (abs(bias[id]) < 65535 - t)
+        if (abs(bias[id]) < 32767 - t)
             bias[id] += t;
         for (int i = 0; i < z; i++) {
-            if (abs(weight[id][i]+t * x[(position + i) % 88]) < 65535 )
+            if (abs(weight[id][i]+t * x[(position + i) % z]) < 32767 )
                 weight[id][i] = weight[id][i] + t * x[(position + i) % z];
         }
     }
