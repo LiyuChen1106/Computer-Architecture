@@ -99,6 +99,13 @@ static instruction_t* map_table[MD_TOTAL_REGS];
 //the index of the last instruction fetched
 static int fetch_index = 0;
 
+
+
+/*ECE552 Assignment 3 -BEGIN CODE*/
+static int instr_queue_position=0;
+static int instr_queue_issue=0;
+/*ECE552 Assignment 3 -END CODE*/
+
 /* FUNCTIONAL UNITS */
 
 
@@ -163,6 +170,13 @@ void execute_To_CDB(int current_cycle) {
 void issue_To_execute(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
+    
+  //check whether all rp status are ready or not
+  //find the min seq available instr
+  //check cdb to update the map table ????
+    
+    int intstatus[RESERV_INT_SIZE];
+    int fpstatus[RESERV_PF_SIZE];
 }
 
 /* 
@@ -174,8 +188,75 @@ void issue_To_execute(int current_cycle) {
  * 	None
  */
 void dispatch_To_issue(int current_cycle) {
-
+     instruction_t* instr;
+    if(instr_queue_size>0){
+       instr= instr_queue[instr_queue_issue];
+        
+        
+    }
+    else
+        return;
+    
+    //check branch op
+    if(IS_COND_CTRL(instr->op)||IS_UNCOND_CTRL(instr->op)){
+        instr_queue[instr_queue_issue]=NULL;
+        instr_queue_issue=(instr_queue_issue+1)%INSTR_QUEUE_SIZE;
+        instr_queue_size--;
+    }
+    else{
+        //check are there any reseveration integer or float
+        bool check=FALSE;
+        if(USES_INT_FU(instr->op)){
+            int avail=0;
+            for(avail=0;avail<RESERV_INT_SIZE;avail++){
+                if(reservINT[avail]==NULL)
+                    break;
+            }
+            if(avail<RESERV_INT_SIZE){
+            instr ->tom_issue_cycle=current_cycle;
+            
+            reservINT[avail]=instr;
+            instr_queue[instr_queue_issue]=NULL;
+            instr_queue_issue=(instr_queue_issue+1)%INSTR_QUEUE_SIZE;
+            instr_queue_size--;
+            check=TRUE;
+            }
+        
+    }else if( USES_FP_FU(instr->op)){
+            int avail=0;
+            for(avail=0;avail<RESERV_FP_SIZE;avail++){
+                if(reservFP[avail]==NULL)
+                    break;
+            }
+            if(avail<RESERV_FP_SIZE){
+            instr ->tom_issue_cycle=current_cycle;
+            
+            reservFP[avail]=instr;
+            instr_queue[instr_queue_issue]=NULL;
+            instr_queue_issue=(instr_queue_issue+1)%INSTR_QUEUE_SIZE;
+            instr_queue_size--;
+            check=TRUE;
+            }
+            
+    }
+        if(check){
+         
+            for(int i=0;i<3;i++){
+                if(instr->r_in[i]!=DNA && map_table[instr->r_in[i]]!=NULL){
+                    instr->Q[i]=map_table[instr->r_in[i]]
+                }
+            }
+            
+            for(int i=0;i<2;i++){
+                if(instr->r_out[i]!=DNA){
+                    map_table[instr->r_out[i]]=instr;
+                }
+            }
+        }
+        }
   /* ECE552: YOUR CODE GOES HERE */
+    
+
 }
 
 /* 
@@ -187,7 +268,17 @@ void dispatch_To_issue(int current_cycle) {
  * 	None
  */
 void fetch(instruction_trace_t* trace) {
-
+    if(instr_queue_size< INSTR_QUEUE_SIZE && fetch_index<sim_num_insn){
+        while(!get_instr(trace,fetch_index)||!(get_instr(trace,fetch_index)->op) || IS_TRAP(get_instr(trace,fetch_index))){
+            fetch_index++;
+        }    
+    }
+    
+     if(instr_queue_size< INSTR_QUEUE_SIZE && fetch_index<sim_num_insn){
+        instruction_t* instruction=get_instr(trace,fetch_index);
+        instr_queue(instr_queue_position)=instruction;
+        instr_queue_size++;
+     }
   /* ECE552: YOUR CODE GOES HERE */
 }
 
@@ -203,7 +294,13 @@ void fetch(instruction_trace_t* trace) {
 void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
 
   fetch(trace);
-
+  
+  instruction_t* instr=instr_queue[instr_queue_position];
+  if(instr!=NULL){
+      instr->tom_dispatch_cycle=current_cycle;
+      instr_queue_position=(instr_queue_position+1)%INSTR_QUEUE_SIZE;
+  }
+      
   /* ECE552: YOUR CODE GOES HERE */
 }
 
