@@ -139,7 +139,52 @@ static bool is_simulation_done(counter_t sim_insn) {
 void CDB_To_retire(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
-
+    if(commonDataBus!=NULL){
+        //flush function units and reservation station first
+           for(int i = 0; i < FU_INT_SIZE;i++){
+                if(fuINT[i]==commonDataBus)
+                    fuINT[i]=NULL;
+            }
+            for(int i = 0; i < FU_FP_SIZE;i++){
+                if(fuFP[i]==commonDataBus)
+                    fuFP[i]=NULL;
+            }
+            for(int i = 0; i < RESERV_FP_SIZE; i++){
+                if(reservFP[i]==commonDataBus)
+                    reservFP[i] = NULL;
+            }
+            for(int i = 0; i < RESERV_INT_SIZE; i++){
+                if(reservINT[i]==commonDataBus)
+                    reservINT[i] = NULL;
+            }
+           //update q to v
+           for(int i=0;i<RESERV_INT_SIZE;i++){
+               if(reservINT[i]!=NULL){
+                   for(int j=0;j<3;j++){
+                       if(reservINT[i]->Q[j]==commonDataBus){
+                           reservINT[i]->Q[j]==NULL;
+                       }
+                   }
+               }
+           }
+           
+           for(int i=0;i<RESERV_FP_SIZE;i++){
+               if(reservFP[i]!=NULL){
+                   for(int j=0;j<3;j++){
+                       if(reservFP[i]->Q[j]==commonDataBus){
+                           reservFP[i]->Q[j]==NULL;
+                       }
+                   }
+               }
+           }
+           for(int i=0;i<MD_TOTAL_REGS;i++){
+               if(map_table[i]==commonDataBus){
+                   map_table[i]=NULL;
+               }
+           }
+           
+    }
+    commonDataBus=NULL;
 }
 
 
@@ -154,7 +199,37 @@ void CDB_To_retire(int current_cycle) {
 void execute_To_CDB(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
+    instruction_t * CDBinst=NULL;
+    for(int i=0;i<FU_INT_SIZE;i++){
+        if(fuINT[i]!=NULL){
+            if(fuINT[i]->tom_execute_cycle+FU_INT_LATENCY>=current_cycle){
+                if(CDBinst==NULL){
+                    CDBinst=fuINT[i];
+                }
+                else if(CDBinst->index > fuINT[i]->index){
+                    CDBinst=fuINT[i];
+                }
+            }
+        }
+    }
 
+    for(int i=0;i<FU_FP_SIZE;i++){
+        if(fuFP[i]!=NULL){
+            if(fuFP[i]->tom_execute_cycle+FU_FP_LATENCY>=current_cycle){
+                if(CDBinst==NULL){
+                    CDBinst=fuFP[i];
+                }
+                else if(CDBinst->index > fuFP[i]->index){
+                    CDBinst=fuFP[i];
+                }
+            }
+        }
+    }    
+    
+    if(CDBinst!=NULL && commonDataBus==NULL){
+        commonDataBus=CDBinst;
+        commonDataBus->tom_cdb_cycle=current_cycle;
+    }
 }
 
 /* 
