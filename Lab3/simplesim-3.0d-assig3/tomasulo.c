@@ -288,16 +288,16 @@ void issue_To_execute(int current_cycle) {
     for (int i = 0; i < FU_INT_SIZE; i++) {
         int target = 0;
         if (fuINT[i] == NULL) {
-            uint check = 100000000;
+            uint check = 300000000;
             for (int j = 0; j < RESERV_INT_SIZE; j++) {
-                if (intstatus[j] == 1) {
-                    if (reservINT[j]->index < check) {
+                if (intstatus[j] == 1 ) {
+                    if (reservINT[j]->index < check && reservINT[j]->tom_execute_cycle==0) {
                         check = reservINT[j]->index;
                         target = j;
                     }
                 }
             }
-            if (check != 100000000) {
+            if (check != 300000000) {
                 fuINT[i] = reservINT[target];
                 intstatus[target] = 0;
                 fuINT[i]->tom_execute_cycle = current_cycle;
@@ -310,16 +310,16 @@ void issue_To_execute(int current_cycle) {
     for (int i = 0; i < FU_FP_SIZE; i++) {
         int target = 0;
         if (fuFP[i] == NULL) {
-            uint check = 100000000;
+            uint check = 300000000;
             for (int j = 0; j < RESERV_FP_SIZE; j++) {
-                if (fpstatus[j] == 1) {
-                    if (reservFP[j]->index < check) {
+                if (fpstatus[j] == 1 ) {
+                    if (reservFP[j]->index < check && reservFP[j]->tom_execute_cycle==0) {
                         check = reservFP[j]->index;
                         target = j;
                     }
                 }
             }
-            if (check != 100000000) {
+            if (check != 300000000) {
                 fuFP[i] = reservFP[target];
                 fpstatus[target] = 0;
                 fuFP[i]->tom_execute_cycle = current_cycle;
