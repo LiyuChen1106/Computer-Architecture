@@ -124,7 +124,7 @@ static bool is_simulation_done(counter_t sim_insn) {
 
 
     /* ECE552: YOUR CODE GOES HERE */
-    if (fetch_index > sim_insn && instr_queue_size == 0 && commonDataBus == NULL)
+    if (fetch_index >= sim_insn && instr_queue_size == 0 && commonDataBus == NULL)
         return true;
     else
         return false;
@@ -166,7 +166,7 @@ void CDB_To_retire(int current_cycle) {
             if (reservINT[i] != NULL) {
                 for (int j = 0; j < 3; j++) {
                     if (reservINT[i]->Q[j] == commonDataBus) {
-                        reservINT[i]->Q[j] == NULL;
+                        reservINT[i]->Q[j] = NULL;
                     }
                 }
             }
@@ -176,7 +176,7 @@ void CDB_To_retire(int current_cycle) {
             if (reservFP[i] != NULL) {
                 for (int j = 0; j < 3; j++) {
                     if (reservFP[i]->Q[j] == commonDataBus) {
-                        reservFP[i]->Q[j] == NULL;
+                        reservFP[i]->Q[j] = NULL;
                     }
                 }
             }
@@ -205,7 +205,15 @@ void execute_To_CDB(int current_cycle) {
     instruction_t * CDBinst = NULL;
     for (int i = 0; i < FU_INT_SIZE; i++) {
         if (fuINT[i] != NULL) {
-            if (fuINT[i]->tom_execute_cycle + FU_INT_LATENCY >= current_cycle) {
+            if (fuINT[i]->tom_execute_cycle + FU_INT_LATENCY <= current_cycle) {
+                if(IS_STORE(fuINT[i]->op)){
+                    for(int j=0;j<RESERV_INT_SIZE;j++){
+                        if(reservINT[j]==fuINT[i])
+                            reservINT[j]=NULL;
+                    }
+                    fuINT[i]=NULL;
+                    continue;}
+                
                 if (CDBinst == NULL) {
                     CDBinst = fuINT[i];
                 } else if (CDBinst->index > fuINT[i]->index) {
@@ -217,7 +225,7 @@ void execute_To_CDB(int current_cycle) {
 
     for (int i = 0; i < FU_FP_SIZE; i++) {
         if (fuFP[i] != NULL) {
-            if (fuFP[i]->tom_execute_cycle + FU_FP_LATENCY >= current_cycle) {
+            if (fuFP[i]->tom_execute_cycle + FU_FP_LATENCY <= current_cycle) {
                 if (CDBinst == NULL) {
                     CDBinst = fuFP[i];
                 } else if (CDBinst->index > fuFP[i]->index) {
@@ -334,6 +342,7 @@ void dispatch_To_issue(int current_cycle) {
     if (instr_queue_size > 0) {
         instr = instr_queue[instr_queue_issue];
 
+         
 
     } else
         return;
@@ -343,6 +352,7 @@ void dispatch_To_issue(int current_cycle) {
         instr_queue[instr_queue_issue] = NULL;
         instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
         instr_queue_size--;
+
     } else {
         //check are there any reseveration integer or float
         bool check = FALSE;
@@ -352,15 +362,19 @@ void dispatch_To_issue(int current_cycle) {
                 if (reservINT[avail] == NULL)
                     break;
             }
+            
             if (avail < RESERV_INT_SIZE) {
+                
                 instr ->tom_issue_cycle = current_cycle;
 
                 reservINT[avail] = instr;
                 instr_queue[instr_queue_issue] = NULL;
                 instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
                 instr_queue_size--;
+
                 check = TRUE;
             }
+
 
         } else if (USES_FP_FU(instr->op)) {
             int avail = 0;
@@ -375,6 +389,7 @@ void dispatch_To_issue(int current_cycle) {
                 instr_queue[instr_queue_issue] = NULL;
                 instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
                 instr_queue_size--;
+
                 check = TRUE;
             }
 
@@ -408,16 +423,21 @@ void dispatch_To_issue(int current_cycle) {
  * 	None
  */
 void fetch(instruction_trace_t* trace) {
+
     if (instr_queue_size < INSTR_QUEUE_SIZE && fetch_index < sim_num_insn) {
-        while (!get_instr(trace, fetch_index) || !(get_instr(trace, fetch_index)->op) || IS_TRAP(get_instr(trace, fetch_index)->op)) {
+        while ( IS_TRAP(get_instr(trace, fetch_index+1)->op)) {
             fetch_index++;
         }
     }
-
+   
     if (instr_queue_size < INSTR_QUEUE_SIZE && fetch_index < sim_num_insn) {
-        instruction_t* instruction = get_instr(trace, fetch_index);
+        instruction_t* instruction = get_instr(trace, fetch_index+1);
+        fetch_index=instruction->index;
+
         instr_queue[instr_queue_position] = instruction;
+        instr_queue_position = (instr_queue_position + 1) % INSTR_QUEUE_SIZE;
         instr_queue_size++;
+
     }
     /* ECE552: YOUR CODE GOES HERE */
 }
@@ -438,7 +458,7 @@ void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
     instruction_t* instr = instr_queue[instr_queue_position];
     if (instr != NULL) {
         instr->tom_dispatch_cycle = current_cycle;
-        instr_queue_position = (instr_queue_position + 1) % INSTR_QUEUE_SIZE;
+
     }
 
     /* ECE552: YOUR CODE GOES HERE */
