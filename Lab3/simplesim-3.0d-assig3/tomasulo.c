@@ -65,13 +65,13 @@
 /* FOR DEBUGGING */
 
 //prints info about an instruction
-#define PRINT_INST(out,instr,str,cycle)	\
-  myfprintf(out, "%d: %s", cycle, str);		\
+#define PRINT_INST(out,instr,str,cycle) \
+  myfprintf(out, "%d: %s", cycle, str);  \
   md_print_insn(instr->inst, instr->pc, out); \
   myfprintf(stdout, "(%d)\n",instr->index);
 
 #define PRINT_REG(out,reg,str,instr) \
-  myfprintf(out, "reg#%d %s ", reg, str);	\
+  myfprintf(out, "reg#%d %s ", reg, str); \
   md_print_insn(instr->inst, instr->pc, out); \
   myfprintf(stdout, "(%d)\n",instr->index);
 
@@ -102,15 +102,14 @@ static int fetch_index = 0;
 
 
 /*ECE552 Assignment 3 -BEGIN CODE*/
-static int instr_queue_position=0;
-static int instr_queue_issue=0;
+static int instr_queue_position = 0;
+static int instr_queue_issue = 0;
 /*ECE552 Assignment 3 -END CODE*/
 
 /* FUNCTIONAL UNITS */
 
 
 /* RESERVATION STATIONS */
-
 
 /* 
  * Description: 
@@ -123,9 +122,14 @@ static int instr_queue_issue=0;
  */
 static bool is_simulation_done(counter_t sim_insn) {
 
-  /* ECE552: YOUR CODE GOES HERE */
 
-  return true; //ECE552: you can change this as needed; we've added this so the code provided to you compiles
+    /* ECE552: YOUR CODE GOES HERE */
+    if (fetch_index > sim_insn && instr_queue_size == 0 && commonDataBus == NULL)
+        return true;
+    else
+        return false;
+
+    return true; //ECE552: you can change this as needed; we've added this so the code provided to you compiles
 }
 
 /* 
@@ -138,55 +142,54 @@ static bool is_simulation_done(counter_t sim_insn) {
  */
 void CDB_To_retire(int current_cycle) {
 
-  /* ECE552: YOUR CODE GOES HERE */
-    if(commonDataBus!=NULL){
+    /* ECE552: YOUR CODE GOES HERE */
+    if (commonDataBus != NULL) {
         //flush function units and reservation station first
-           for(int i = 0; i < FU_INT_SIZE;i++){
-                if(fuINT[i]==commonDataBus)
-                    fuINT[i]=NULL;
+        for (int i = 0; i < FU_INT_SIZE; i++) {
+            if (fuINT[i] == commonDataBus)
+                fuINT[i] = NULL;
+        }
+        for (int i = 0; i < FU_FP_SIZE; i++) {
+            if (fuFP[i] == commonDataBus)
+                fuFP[i] = NULL;
+        }
+        for (int i = 0; i < RESERV_FP_SIZE; i++) {
+            if (reservFP[i] == commonDataBus)
+                reservFP[i] = NULL;
+        }
+        for (int i = 0; i < RESERV_INT_SIZE; i++) {
+            if (reservINT[i] == commonDataBus)
+                reservINT[i] = NULL;
+        }
+        //update q to v
+        for (int i = 0; i < RESERV_INT_SIZE; i++) {
+            if (reservINT[i] != NULL) {
+                for (int j = 0; j < 3; j++) {
+                    if (reservINT[i]->Q[j] == commonDataBus) {
+                        reservINT[i]->Q[j] == NULL;
+                    }
+                }
             }
-            for(int i = 0; i < FU_FP_SIZE;i++){
-                if(fuFP[i]==commonDataBus)
-                    fuFP[i]=NULL;
-            }
-            for(int i = 0; i < RESERV_FP_SIZE; i++){
-                if(reservFP[i]==commonDataBus)
-                    reservFP[i] = NULL;
-            }
-            for(int i = 0; i < RESERV_INT_SIZE; i++){
-                if(reservINT[i]==commonDataBus)
-                    reservINT[i] = NULL;
-            }
-           //update q to v
-           for(int i=0;i<RESERV_INT_SIZE;i++){
-               if(reservINT[i]!=NULL){
-                   for(int j=0;j<3;j++){
-                       if(reservINT[i]->Q[j]==commonDataBus){
-                           reservINT[i]->Q[j]==NULL;
-                       }
-                   }
-               }
-           }
-           
-           for(int i=0;i<RESERV_FP_SIZE;i++){
-               if(reservFP[i]!=NULL){
-                   for(int j=0;j<3;j++){
-                       if(reservFP[i]->Q[j]==commonDataBus){
-                           reservFP[i]->Q[j]==NULL;
-                       }
-                   }
-               }
-           }
-           for(int i=0;i<MD_TOTAL_REGS;i++){
-               if(map_table[i]==commonDataBus){
-                   map_table[i]=NULL;
-               }
-           }
-           
-    }
-    commonDataBus=NULL;
-}
+        }
 
+        for (int i = 0; i < RESERV_FP_SIZE; i++) {
+            if (reservFP[i] != NULL) {
+                for (int j = 0; j < 3; j++) {
+                    if (reservFP[i]->Q[j] == commonDataBus) {
+                        reservFP[i]->Q[j] == NULL;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < MD_TOTAL_REGS; i++) {
+            if (map_table[i] == commonDataBus) {
+                map_table[i] = NULL;
+            }
+        }
+
+    }
+    commonDataBus = NULL;
+}
 
 /* 
  * Description: 
@@ -198,37 +201,35 @@ void CDB_To_retire(int current_cycle) {
  */
 void execute_To_CDB(int current_cycle) {
 
-  /* ECE552: YOUR CODE GOES HERE */
-    instruction_t * CDBinst=NULL;
-    for(int i=0;i<FU_INT_SIZE;i++){
-        if(fuINT[i]!=NULL){
-            if(fuINT[i]->tom_execute_cycle+FU_INT_LATENCY>=current_cycle){
-                if(CDBinst==NULL){
-                    CDBinst=fuINT[i];
-                }
-                else if(CDBinst->index > fuINT[i]->index){
-                    CDBinst=fuINT[i];
+    /* ECE552: YOUR CODE GOES HERE */
+    instruction_t * CDBinst = NULL;
+    for (int i = 0; i < FU_INT_SIZE; i++) {
+        if (fuINT[i] != NULL) {
+            if (fuINT[i]->tom_execute_cycle + FU_INT_LATENCY >= current_cycle) {
+                if (CDBinst == NULL) {
+                    CDBinst = fuINT[i];
+                } else if (CDBinst->index > fuINT[i]->index) {
+                    CDBinst = fuINT[i];
                 }
             }
         }
     }
 
-    for(int i=0;i<FU_FP_SIZE;i++){
-        if(fuFP[i]!=NULL){
-            if(fuFP[i]->tom_execute_cycle+FU_FP_LATENCY>=current_cycle){
-                if(CDBinst==NULL){
-                    CDBinst=fuFP[i];
-                }
-                else if(CDBinst->index > fuFP[i]->index){
-                    CDBinst=fuFP[i];
+    for (int i = 0; i < FU_FP_SIZE; i++) {
+        if (fuFP[i] != NULL) {
+            if (fuFP[i]->tom_execute_cycle + FU_FP_LATENCY >= current_cycle) {
+                if (CDBinst == NULL) {
+                    CDBinst = fuFP[i];
+                } else if (CDBinst->index > fuFP[i]->index) {
+                    CDBinst = fuFP[i];
                 }
             }
         }
-    }    
-    
-    if(CDBinst!=NULL && commonDataBus==NULL){
-        commonDataBus=CDBinst;
-        commonDataBus->tom_cdb_cycle=current_cycle;
+    }
+
+    if (CDBinst != NULL && commonDataBus == NULL) {
+        commonDataBus = CDBinst;
+        commonDataBus->tom_cdb_cycle = current_cycle;
     }
 }
 
@@ -244,77 +245,77 @@ void execute_To_CDB(int current_cycle) {
  */
 void issue_To_execute(int current_cycle) {
 
-  /* ECE552: YOUR CODE GOES HERE */
-    
-  //check whether all rp status are ready or not
-  //find the min seq available instr
-  //check cdb to update the map table ????
-    
+    /* ECE552: YOUR CODE GOES HERE */
+
+    //check whether all rp status are ready or not
+    //find the min seq available instr
+    //check cdb to update the map table ????
+
     int intstatus[RESERV_INT_SIZE];
     int fpstatus[RESERV_FP_SIZE];
-    for(int i=0;i<RESERV_INT_SIZE;i++){
-        intstatus[i]=0;
+    for (int i = 0; i < RESERV_INT_SIZE; i++) {
+        intstatus[i] = 0;
     }
-    for(int i=0;i<RESERV_FP_SIZE;i++){
-        fpstatus[i]=0;
+    for (int i = 0; i < RESERV_FP_SIZE; i++) {
+        fpstatus[i] = 0;
     }
-    
-    for(int i=0;i<RESERV_INT_SIZE;i++){
-        if(reservINT[i]!=NULL){
-            if(reservINT[i]->Q[0]==NULL && reservINT[i]->Q[1]==NULL && reservINT[i]->Q[2]==NULL){
-                intstatus[i]=1;
+
+    for (int i = 0; i < RESERV_INT_SIZE; i++) {
+        if (reservINT[i] != NULL) {
+            if (reservINT[i]->Q[0] == NULL && reservINT[i]->Q[1] == NULL && reservINT[i]->Q[2] == NULL) {
+                intstatus[i] = 1;
             }
         }
     }
-    for(int i=0;i<RESERV_FP_SIZE;i++){
-        if(reservFP[i]!=NULL){
-            if(reservFP[i]->Q[0]==NULL && reservFP[i]->Q[1]==NULL && reservFP[i]->Q[2]==NULL){
-                fpstatus[i]=1;
+    for (int i = 0; i < RESERV_FP_SIZE; i++) {
+        if (reservFP[i] != NULL) {
+            if (reservFP[i]->Q[0] == NULL && reservFP[i]->Q[1] == NULL && reservFP[i]->Q[2] == NULL) {
+                fpstatus[i] = 1;
             }
         }
-    }    
-    
+    }
+
     //check for fu int units
-   
-    for(int i=0;i<FU_INT_SIZE;i++){
-        int target=0;
-        if(fuINT[i]==NULL){
-            uint check=100000000;
-            for(int j=0;j<RESERV_INT_SIZE;j++){
-                if(intstatus[j]==1){
-                    if(reservINT[j]->index<check){
-                        check=reservINT[j]->index;
-                        target=j;
+
+    for (int i = 0; i < FU_INT_SIZE; i++) {
+        int target = 0;
+        if (fuINT[i] == NULL) {
+            uint check = 100000000;
+            for (int j = 0; j < RESERV_INT_SIZE; j++) {
+                if (intstatus[j] == 1) {
+                    if (reservINT[j]->index < check) {
+                        check = reservINT[j]->index;
+                        target = j;
                     }
                 }
             }
-            if(check!=100000000){
-                fuINT[i]=reservINT[target];
-                intstatus[target]=0;
-                fuINT[i]->tom_execute_cycle=current_cycle;
-              
+            if (check != 100000000) {
+                fuINT[i] = reservINT[target];
+                intstatus[target] = 0;
+                fuINT[i]->tom_execute_cycle = current_cycle;
+
             }
         }
     }
-    
+
     //check for fu fp units
-    for(int i=0;i<FU_FP_SIZE;i++){
-        int target=0;
-        if(fuFP[i]==NULL){
-            uint check=100000000;
-            for(int j=0;j<RESERV_FP_SIZE;j++){
-                if(fpstatus[j]==1){
-                    if(reservFP[j]->index<check){
-                        check=reservFP[j]->index;
-                        target=j;
+    for (int i = 0; i < FU_FP_SIZE; i++) {
+        int target = 0;
+        if (fuFP[i] == NULL) {
+            uint check = 100000000;
+            for (int j = 0; j < RESERV_FP_SIZE; j++) {
+                if (fpstatus[j] == 1) {
+                    if (reservFP[j]->index < check) {
+                        check = reservFP[j]->index;
+                        target = j;
                     }
                 }
             }
-            if(check!=100000000){
-                fuFP[i]=reservFP[target];
-                fpstatus[target]=0;
-                fuFP[i]->tom_execute_cycle=current_cycle;
-              
+            if (check != 100000000) {
+                fuFP[i] = reservFP[target];
+                fpstatus[target] = 0;
+                fuFP[i]->tom_execute_cycle = current_cycle;
+
             }
         }
     }
@@ -329,74 +330,72 @@ void issue_To_execute(int current_cycle) {
  * 	None
  */
 void dispatch_To_issue(int current_cycle) {
-     instruction_t* instr;
-    if(instr_queue_size>0){
-       instr= instr_queue[instr_queue_issue];
-        
-        
-    }
-    else
+    instruction_t* instr;
+    if (instr_queue_size > 0) {
+        instr = instr_queue[instr_queue_issue];
+
+
+    } else
         return;
-    
+
     //check branch op
-    if(IS_COND_CTRL(instr->op)||IS_UNCOND_CTRL(instr->op)){
-        instr_queue[instr_queue_issue]=NULL;
-        instr_queue_issue=(instr_queue_issue+1)%INSTR_QUEUE_SIZE;
+    if (IS_COND_CTRL(instr->op) || IS_UNCOND_CTRL(instr->op)) {
+        instr_queue[instr_queue_issue] = NULL;
+        instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
         instr_queue_size--;
-    }
-    else{
+    } else {
         //check are there any reseveration integer or float
-        bool check=FALSE;
-        if(USES_INT_FU(instr->op)){
-            int avail=0;
-            for(avail=0;avail<RESERV_INT_SIZE;avail++){
-                if(reservINT[avail]==NULL)
+        bool check = FALSE;
+        if (USES_INT_FU(instr->op)) {
+            int avail = 0;
+            for (avail = 0; avail < RESERV_INT_SIZE; avail++) {
+                if (reservINT[avail] == NULL)
                     break;
             }
-            if(avail<RESERV_INT_SIZE){
-            instr ->tom_issue_cycle=current_cycle;
-            
-            reservINT[avail]=instr;
-            instr_queue[instr_queue_issue]=NULL;
-            instr_queue_issue=(instr_queue_issue+1)%INSTR_QUEUE_SIZE;
-            instr_queue_size--;
-            check=TRUE;
+            if (avail < RESERV_INT_SIZE) {
+                instr ->tom_issue_cycle = current_cycle;
+
+                reservINT[avail] = instr;
+                instr_queue[instr_queue_issue] = NULL;
+                instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
+                instr_queue_size--;
+                check = TRUE;
             }
-        
-    }else if( USES_FP_FU(instr->op)){
-            int avail=0;
-            for(avail=0;avail<RESERV_FP_SIZE;avail++){
-                if(reservFP[avail]==NULL)
+
+        } else if (USES_FP_FU(instr->op)) {
+            int avail = 0;
+            for (avail = 0; avail < RESERV_FP_SIZE; avail++) {
+                if (reservFP[avail] == NULL)
                     break;
             }
-            if(avail<RESERV_FP_SIZE){
-            instr ->tom_issue_cycle=current_cycle;
-            
-            reservFP[avail]=instr;
-            instr_queue[instr_queue_issue]=NULL;
-            instr_queue_issue=(instr_queue_issue+1)%INSTR_QUEUE_SIZE;
-            instr_queue_size--;
-            check=TRUE;
+            if (avail < RESERV_FP_SIZE) {
+                instr ->tom_issue_cycle = current_cycle;
+
+                reservFP[avail] = instr;
+                instr_queue[instr_queue_issue] = NULL;
+                instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
+                instr_queue_size--;
+                check = TRUE;
             }
-            
+
+        }
+        if (check) {
+
+            for (int i = 0; i < 3; i++) {
+                if (instr->r_in[i] != DNA && map_table[instr->r_in[i]] != NULL) {
+                    instr->Q[i] = map_table[instr->r_in[i]];
+                }
+            }
+
+            for (int i = 0; i < 2; i++) {
+                if (instr->r_out[i] != DNA) {
+                    map_table[instr->r_out[i]] = instr;
+                }
+            }
+        }
     }
-        if(check){
-         
-            for(int i=0;i<3;i++){
-                if(instr->r_in[i]!=DNA && map_table[instr->r_in[i]]!=NULL){
-                    instr->Q[i]=map_table[instr->r_in[i]];
-                }
-            }
-            
-            for(int i=0;i<2;i++){
-                if(instr->r_out[i]!=DNA){
-                    map_table[instr->r_out[i]]=instr;
-                }
-            }
-        }
-        }
-  /* ECE552: YOUR CODE GOES HERE */
-    
+    /* ECE552: YOUR CODE GOES HERE */
+
 
 }
 
@@ -409,18 +408,18 @@ void dispatch_To_issue(int current_cycle) {
  * 	None
  */
 void fetch(instruction_trace_t* trace) {
-    if(instr_queue_size< INSTR_QUEUE_SIZE && fetch_index<sim_num_insn){
-        while(!get_instr(trace,fetch_index)||!(get_instr(trace,fetch_index)->op) || IS_TRAP(get_instr(trace,fetch_index)->op)){
+    if (instr_queue_size < INSTR_QUEUE_SIZE && fetch_index < sim_num_insn) {
+        while (!get_instr(trace, fetch_index) || !(get_instr(trace, fetch_index)->op) || IS_TRAP(get_instr(trace, fetch_index)->op)) {
             fetch_index++;
-        }    
+        }
     }
-    
-     if(instr_queue_size< INSTR_QUEUE_SIZE && fetch_index<sim_num_insn){
-        instruction_t* instruction=get_instr(trace,fetch_index);
-        instr_queue[instr_queue_position]=instruction;
+
+    if (instr_queue_size < INSTR_QUEUE_SIZE && fetch_index < sim_num_insn) {
+        instruction_t* instruction = get_instr(trace, fetch_index);
+        instr_queue[instr_queue_position] = instruction;
         instr_queue_size++;
-     }
-  /* ECE552: YOUR CODE GOES HERE */
+    }
+    /* ECE552: YOUR CODE GOES HERE */
 }
 
 /* 
@@ -434,15 +433,15 @@ void fetch(instruction_trace_t* trace) {
  */
 void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
 
-  fetch(trace);
-  
-  instruction_t* instr=instr_queue[instr_queue_position];
-  if(instr!=NULL){
-      instr->tom_dispatch_cycle=current_cycle;
-      instr_queue_position=(instr_queue_position+1)%INSTR_QUEUE_SIZE;
-  }
-      
-  /* ECE552: YOUR CODE GOES HERE */
+    fetch(trace);
+
+    instruction_t* instr = instr_queue[instr_queue_position];
+    if (instr != NULL) {
+        instr->tom_dispatch_cycle = current_cycle;
+        instr_queue_position = (instr_queue_position + 1) % INSTR_QUEUE_SIZE;
+    }
+
+    /* ECE552: YOUR CODE GOES HERE */
 }
 
 /* 
@@ -455,48 +454,52 @@ void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
  * Extra Notes:
  * 	sim_num_insn: the number of instructions in the trace
  */
-counter_t runTomasulo(instruction_trace_t* trace)
-{
-  //initialize instruction queue
-  int i;
-  for (i = 0; i < INSTR_QUEUE_SIZE; i++) {
-    instr_queue[i] = NULL;
-  }
+counter_t runTomasulo(instruction_trace_t* trace) {
+    //initialize instruction queue
+    int i;
+    for (i = 0; i < INSTR_QUEUE_SIZE; i++) {
+        instr_queue[i] = NULL;
+    }
 
-  //initialize reservation stations
-  for (i = 0; i < RESERV_INT_SIZE; i++) {
-      reservINT[i] = NULL;
-  }
+    //initialize reservation stations
+    for (i = 0; i < RESERV_INT_SIZE; i++) {
+        reservINT[i] = NULL;
+    }
 
-  for(i = 0; i < RESERV_FP_SIZE; i++) {
-      reservFP[i] = NULL;
-  }
+    for (i = 0; i < RESERV_FP_SIZE; i++) {
+        reservFP[i] = NULL;
+    }
 
-  //initialize functional units
-  for (i = 0; i < FU_INT_SIZE; i++) {
-    fuINT[i] = NULL;
-  }
+    //initialize functional units
+    for (i = 0; i < FU_INT_SIZE; i++) {
+        fuINT[i] = NULL;
+    }
 
-  for (i = 0; i < FU_FP_SIZE; i++) {
-    fuFP[i] = NULL;
-  }
+    for (i = 0; i < FU_FP_SIZE; i++) {
+        fuFP[i] = NULL;
+    }
 
-  //initialize map_table to no producers
-  int reg;
-  for (reg = 0; reg < MD_TOTAL_REGS; reg++) {
-    map_table[reg] = NULL;
-  }
-  
-  int cycle = 1;
-  while (true) {
+    //initialize map_table to no producers
+    int reg;
+    for (reg = 0; reg < MD_TOTAL_REGS; reg++) {
+        map_table[reg] = NULL;
+    }
 
-     /* ECE552: YOUR CODE GOES HERE */
+    int cycle = 1;
+    while (true) {
 
-     cycle++;
+        /* ECE552: YOUR CODE GOES HERE */
+        CDB_To_retire(cycle);
+        execute_To_CDB(cycle);
+        issue_To_execute(cycle);
+        fetch_To_dispatch(trace,cycle);
+        dispatch_To_issue(cycle);
 
-     if (is_simulation_done(sim_num_insn))
-        break;
-  }
-  
-  return cycle;
+        cycle++;
+
+        if (is_simulation_done(sim_num_insn))
+            break;
+    }
+
+    return cycle;
 }
