@@ -23,15 +23,15 @@
 
 /* PARAMETERS OF THE TOMASULO'S ALGORITHM */
 
-#define INSTR_QUEUE_SIZE         10
+#define INSTR_QUEUE_SIZE         16
 
-#define RESERV_INT_SIZE    4
-#define RESERV_FP_SIZE     2
-#define FU_INT_SIZE        2
+#define RESERV_INT_SIZE    5
+#define RESERV_FP_SIZE     3
+#define FU_INT_SIZE        3
 #define FU_FP_SIZE         1
 
-#define FU_INT_LATENCY     4
-#define FU_FP_LATENCY      9
+#define FU_INT_LATENCY     5
+#define FU_FP_LATENCY      7
 
 /* IDENTIFYING INSTRUCTIONS */
 
@@ -176,7 +176,73 @@ void issue_To_execute(int current_cycle) {
   //check cdb to update the map table ????
     
     int intstatus[RESERV_INT_SIZE];
-    int fpstatus[RESERV_PF_SIZE];
+    int fpstatus[RESERV_FP_SIZE];
+    for(int i=0;i<RESERV_INT_SIZE;i++){
+        intstatus[i]=0;
+    }
+    for(int i=0;i<RESERV_FP_SIZE;i++){
+        fpstatus[i]=0;
+    }
+    
+    for(int i=0;i<RESERV_INT_SIZE;i++){
+        if(reservINT[i]!=NULL){
+            if(reservINT[i]->Q[0]==NULL && reservINT[i]->Q[1]==NULL && reservINT[i]->Q[2]==NULL){
+                intstatus[i]=1;
+            }
+        }
+    }
+    for(int i=0;i<RESERV_FP_SIZE;i++){
+        if(reservFP[i]!=NULL){
+            if(reservFP[i]->Q[0]==NULL && reservFP[i]->Q[1]==NULL && reservFP[i]->Q[2]==NULL){
+                fpstatus[i]=1;
+            }
+        }
+    }    
+    
+    //check for fu int units
+   
+    for(int i=0;i<FU_INT_SIZE;i++){
+        int target=0;
+        if(fuINT[i]==NULL){
+            uint check=100000000;
+            for(int j=0;j<RESERV_INT_SIZE;j++){
+                if(intstatus[j]==1){
+                    if(reservINT[j]->index<check){
+                        check=reservINT[j]->index;
+                        target=j;
+                    }
+                }
+            }
+            if(check!=100000000){
+                fuINT[i]=reservINT[target];
+                intstatus[target]=0;
+                fuINT[i]->tom_execute_cycle=current_cycle;
+              
+            }
+        }
+    }
+    
+    //check for fu fp units
+    for(int i=0;i<FU_FP_SIZE;i++){
+        int target=0;
+        if(fuFP[i]==NULL){
+            uint check=100000000;
+            for(int j=0;j<RESERV_FP_SIZE;j++){
+                if(fpstatus[j]==1){
+                    if(reservFP[j]->index<check){
+                        check=reservFP[j]->index;
+                        target=j;
+                    }
+                }
+            }
+            if(check!=100000000){
+                fuFP[i]=reservFP[target];
+                fpstatus[target]=0;
+                fuFP[i]->tom_execute_cycle=current_cycle;
+              
+            }
+        }
+    }
 }
 
 /* 
@@ -243,7 +309,7 @@ void dispatch_To_issue(int current_cycle) {
          
             for(int i=0;i<3;i++){
                 if(instr->r_in[i]!=DNA && map_table[instr->r_in[i]]!=NULL){
-                    instr->Q[i]=map_table[instr->r_in[i]]
+                    instr->Q[i]=map_table[instr->r_in[i]];
                 }
             }
             
@@ -269,14 +335,14 @@ void dispatch_To_issue(int current_cycle) {
  */
 void fetch(instruction_trace_t* trace) {
     if(instr_queue_size< INSTR_QUEUE_SIZE && fetch_index<sim_num_insn){
-        while(!get_instr(trace,fetch_index)||!(get_instr(trace,fetch_index)->op) || IS_TRAP(get_instr(trace,fetch_index))){
+        while(!get_instr(trace,fetch_index)||!(get_instr(trace,fetch_index)->op) || IS_TRAP(get_instr(trace,fetch_index)->op)){
             fetch_index++;
         }    
     }
     
      if(instr_queue_size< INSTR_QUEUE_SIZE && fetch_index<sim_num_insn){
         instruction_t* instruction=get_instr(trace,fetch_index);
-        instr_queue(instr_queue_position)=instruction;
+        instr_queue[instr_queue_position]=instruction;
         instr_queue_size++;
      }
   /* ECE552: YOUR CODE GOES HERE */
