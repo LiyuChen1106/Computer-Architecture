@@ -369,7 +369,8 @@ void dispatch_To_issue(int current_cycle) {
 
                 reservINT[avail] = instr;
                 instr_queue[instr_queue_issue] = NULL;
-                instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
+                if(instr_queue_position != instr_queue_issue)
+                	instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
                 instr_queue_size--;
 
                 check = TRUE;
@@ -387,7 +388,8 @@ void dispatch_To_issue(int current_cycle) {
 
                 reservFP[avail] = instr;
                 instr_queue[instr_queue_issue] = NULL;
-                instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
+                if(instr_queue_position != instr_queue_issue)
+                	instr_queue_issue = (instr_queue_issue + 1) % INSTR_QUEUE_SIZE;
                 instr_queue_size--;
 
                 check = TRUE;
@@ -434,8 +436,11 @@ void fetch(instruction_trace_t* trace) {
         instruction_t* instruction = get_instr(trace, fetch_index+1);
         fetch_index=instruction->index;
 
+		if (instr_queue_size != 0)
+			instr_queue_position = (instr_queue_position + 1) % INSTR_QUEUE_SIZE;
+			
         instr_queue[instr_queue_position] = instruction;
-        instr_queue_position = (instr_queue_position + 1) % INSTR_QUEUE_SIZE;
+        
         instr_queue_size++;
 
     }
@@ -512,9 +517,10 @@ counter_t runTomasulo(instruction_trace_t* trace) {
         CDB_To_retire(cycle);
         execute_To_CDB(cycle);
         issue_To_execute(cycle);
-        fetch_To_dispatch(trace,cycle);
         dispatch_To_issue(cycle);
+        fetch_To_dispatch(trace,cycle);
 
+		print_all_instr(trace, sim_num_insn);
         cycle++;
 
         if (is_simulation_done(sim_num_insn))
