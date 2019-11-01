@@ -144,23 +144,7 @@ void CDB_To_retire(int current_cycle) {
 
     /* ECE552: YOUR CODE GOES HERE */
     if (commonDataBus != NULL) {
-        //flush function units and reservation station first
-        for (int i = 0; i < FU_INT_SIZE; i++) {
-            if (fuINT[i] == commonDataBus)
-                fuINT[i] = NULL;
-        }
-        for (int i = 0; i < FU_FP_SIZE; i++) {
-            if (fuFP[i] == commonDataBus)
-                fuFP[i] = NULL;
-        }
-        for (int i = 0; i < RESERV_FP_SIZE; i++) {
-            if (reservFP[i] == commonDataBus)
-                reservFP[i] = NULL;
-        }
-        for (int i = 0; i < RESERV_INT_SIZE; i++) {
-            if (reservINT[i] == commonDataBus)
-                reservINT[i] = NULL;
-        }
+        
         //update q to v
         for (int i = 0; i < RESERV_INT_SIZE; i++) {
             if (reservINT[i] != NULL) {
@@ -181,11 +165,7 @@ void CDB_To_retire(int current_cycle) {
                 }
             }
         }
-        for (int i = 0; i < MD_TOTAL_REGS; i++) {
-            if (map_table[i] == commonDataBus) {
-                map_table[i] = NULL;
-            }
-        }
+        
 
     }
     commonDataBus = NULL;
@@ -238,6 +218,29 @@ void execute_To_CDB(int current_cycle) {
     if (CDBinst != NULL && commonDataBus == NULL) {
         commonDataBus = CDBinst;
         commonDataBus->tom_cdb_cycle = current_cycle;
+        
+        //flush function units and reservation station first
+        for (int i = 0; i < FU_INT_SIZE; i++) {
+            if (fuINT[i] == commonDataBus)
+                fuINT[i] = NULL;
+        }
+        for (int i = 0; i < FU_FP_SIZE; i++) {
+            if (fuFP[i] == commonDataBus)
+                fuFP[i] = NULL;
+        }
+        for (int i = 0; i < RESERV_FP_SIZE; i++) {
+            if (reservFP[i] == commonDataBus)
+                reservFP[i] = NULL;
+        }
+        for (int i = 0; i < RESERV_INT_SIZE; i++) {
+            if (reservINT[i] == commonDataBus)
+                reservINT[i] = NULL;
+        }
+        for (int i = 0; i < MD_TOTAL_REGS; i++) {
+            if (map_table[i] == commonDataBus) {
+                map_table[i] = NULL;
+            }
+        }
     }
 }
 
@@ -297,6 +300,7 @@ void issue_To_execute(int current_cycle) {
                     }
                 }
             }
+            
             if (check != 300000000) {
                 fuINT[i] = reservINT[target];
                 intstatus[target] = 0;
@@ -461,7 +465,7 @@ void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
     fetch(trace);
 
     instruction_t* instr = instr_queue[instr_queue_position];
-    if (instr != NULL) {
+    if (instr != NULL && instr->tom_dispatch_cycle == 0) {
         instr->tom_dispatch_cycle = current_cycle;
 
     }
