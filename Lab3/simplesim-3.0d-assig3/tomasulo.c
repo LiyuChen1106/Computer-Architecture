@@ -123,8 +123,9 @@ static bool is_simulation_done(counter_t sim_insn) {
 
 
     /* ECE552: YOUR CODE GOES HERE */
-    if (fetch_index >= sim_insn && instr_queue_size == 0 && commonDataBus == NULL && reservINT[0]==NULL && reservINT[1]==NULL && reservINT[2]==NULL &&reservINT[3]==NULL &&reservINT[4]==NULL&& reservINT[5]==NULL&& reservFP[0]==NULL &&reservFP[1]==NULL&&reservFP[2]==NULL && fuINT[0]==NULL&&fuINT[1]==NULL&&fuINT[2]==NULL&&fuFP[0]==NULL)
-        return true;
+    if (fetch_index >= sim_insn && instr_queue_size == 0 && commonDataBus == NULL && reservINT[0]==NULL && reservINT[1]==NULL && reservINT[2]==NULL &&reservINT[3]==NULL &&reservINT[4]==NULL&& reservINT[5]==NULL&& reservFP[0]==NULL &&reservFP[1]==NULL&&reservFP[2]==NULL && fuINT[0]==NULL&&fuINT[1]==NULL&&fuINT[2]==NULL&&fuFP[0]==NULL){
+       
+        return true;}
     else
         return false;
 
@@ -524,10 +525,11 @@ counter_t runTomasulo(instruction_trace_t* trace) {
         fetch_To_dispatch(trace,cycle);
 
 		print_all_instr(trace, sim_num_insn);
-        cycle++;
+        
 
         if (is_simulation_done(sim_num_insn))
             break;
+        cycle++;
     }
 
     return cycle;
