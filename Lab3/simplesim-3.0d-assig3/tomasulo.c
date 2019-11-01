@@ -1,4 +1,3 @@
-
 #include <limits.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -124,7 +123,7 @@ static bool is_simulation_done(counter_t sim_insn) {
 
 
     /* ECE552: YOUR CODE GOES HERE */
-    if (fetch_index >= sim_insn && instr_queue_size == 0 && commonDataBus == NULL)
+    if (fetch_index >= sim_insn && instr_queue_size == 0 && commonDataBus == NULL && reservINT[0]==NULL && reservINT[1]==NULL && reservINT[2]==NULL &&reservINT[3]==NULL &&reservINT[4]==NULL&& reservINT[5]==NULL&& reservFP[0]==NULL &&reservFP[1]==NULL&&reservFP[2]==NULL && fuINT[0]==NULL&&fuINT[1]==NULL&&fuINT[2]==NULL&&fuFP[0]==NULL)
         return true;
     else
         return false;
