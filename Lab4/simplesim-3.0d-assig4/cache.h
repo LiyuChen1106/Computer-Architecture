@@ -109,6 +109,28 @@ enum cache_policy {
 /* block status values */
 #define CACHE_BLK_VALID		0x00000001	/* block in valid, in use */
 #define CACHE_BLK_DIRTY		0x00000002	/* dirty block */
+/* ECE552 Assignment 4 - BEGIN CODE*/
+
+
+
+enum stride_state {
+	initial,
+	transient,
+	steady,
+	none
+};
+
+typedef struct reference_predictor_table_entry
+{
+	md_addr_t tag;
+	md_addr_t prev;
+	int stride;
+	enum stride_state state;
+	
+} entry;
+
+
+/* ECE552 Assignment 4 - END CODE*/
 
 /* cache block (or line) definition */
 struct cache_blk_t
@@ -185,6 +207,11 @@ struct cache_t
   int tag_shift;
   md_addr_t tag_mask;		/* use *after* shift */
   md_addr_t tagset_mask;	/* used for fast hit detection */
+  
+  /* ECE552 Assignment 4 - BEGIN CODE*/
+	//for the stride prefetcher
+	int stride_table_entries;
+	entry *stride_prefetch_table;
 
   /* bus resource */
   tick_t bus_free;		/* time when bus to next level of cache is
