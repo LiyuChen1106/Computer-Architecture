@@ -408,6 +408,17 @@ cache_create(char *name,		/* name of the cache */
 	    cp->sets[i].way_tail = blk;
 	}
     }
+  
+  	/* ECE552 Assignment 4 - BEGIN CODE*/
+	if(prefetch_type > 2)
+	{
+		// allocate the reference prediction table entries
+		cp->stride_table_entries = prefetch_type;
+		cp->stride_prefetch_table = (entry *)calloc(cp->stride_table_entries, sizeof(entry));
+		// log_base2(cp->stride_table_entries) 
+	}
+  
+  
   return cp;
 }
 
@@ -507,7 +518,12 @@ cache_reg_stats(struct cache_t *cp,	/* cache instance */
 
 /* Next Line Prefetcher */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
-	; 
+		/* ECE552 Assignment 4 - BEGIN CODE*/
+	if(cache_probe(cp, addr + cp->bsize) == 0)
+	{
+		cache_access(cp, Read, CACHE_BADDR(cp, addr + cp->bsize), NULL, cp->bsize, 0, NULL, NULL, 1);
+	}
+	/* ECE552 Assignment 4 - END CODE*/
 }
 
 /* Open Ended Prefetcher */
@@ -517,7 +533,60 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
 
 /* Stride Prefetcher */
 void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
-	; 
+		/* ECE552 Assignment 4 - BEGIN CODE*/
+	md_addr_t pc = get_PC();
+	int index = (pc >> 3) & (cp->stride_table_entries - 1);
+	if((cp->stride_prefetch_table)[index].tag != pc)
+	{
+		// the memory access is not in reference prediction table
+		(cp->stride_prefetch_table)[index].tag = pc;
+		(cp->stride_prefetch_table)[index].stride = 0;
+		(cp->stride_prefetch_table)[index].state = initial;
+	}
+	else
+	{
+		int diff = addr - (cp->stride_prefetch_table)[index].prev;
+		if(diff == (cp->stride_prefetch_table)[index].stride)
+		{
+			// no change to the stride value
+			if((cp->stride_prefetch_table)[index].state == none)
+			{
+				(cp->stride_prefetch_table)[index].state = transient;
+			}
+			else
+			{
+				(cp->stride_prefetch_table)[index].state = steady;
+			}
+			if(cache_probe(cp, addr + (cp->stride_prefetch_table)[index].stride) == 0)
+				cache_access(cp, Read, CACHE_BADDR(cp, addr + (cp->stride_prefetch_table)[index].stride), NULL, cp->bsize, 0, NULL, NULL, 1);
+		}
+		else
+		{
+			// discover a different stride value
+			if((cp->stride_prefetch_table)[index].state == none || (cp->stride_prefetch_table)[index].state == transient)
+			{
+				(cp->stride_prefetch_table)[index].stride = diff;
+				(cp->stride_prefetch_table)[index].state = none;
+			}
+			else
+			{
+				if((cp->stride_prefetch_table)[index].state == initial)
+				{
+					(cp->stride_prefetch_table)[index].stride = diff;
+					(cp->stride_prefetch_table)[index].state = transient;
+				}
+				else
+				{
+					// in steady, do not update the stride value just yet
+					(cp->stride_prefetch_table)[index].state = initial;
+				}
+				if(cache_probe(cp, addr + (cp->stride_prefetch_table)[index].stride) == 0)
+					cache_access(cp, Read, CACHE_BADDR(cp, addr + (cp->stride_prefetch_table)[index].stride), NULL, cp->bsize, 0, NULL, NULL, 1);
+			}
+		}
+	}
+	(cp->stride_prefetch_table)[index].prev = addr;
+	/* ECE552 Assignment 4 - END CODE*/
 }
 
 
