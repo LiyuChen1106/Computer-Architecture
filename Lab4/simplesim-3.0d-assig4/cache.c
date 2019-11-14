@@ -390,7 +390,7 @@ cache_create(char *name, /* name of the cache */
     /* ECE552 Assignment 4 - BEGIN CODE*/
     if (prefetch_type > 2) {
         cp->table_size = prefetch_type;
-        cp->rpt_table = (rpt_entry *) malloc(cp->table_size, sizeof (rpt_entry));
+        cp->rpt_table = (struct rpt_entry *) malloc(cp->table_size * sizeof (struct rpt_entry));
 
         for (int i = 0; i < prefetch_type; i++) {
             cp->rpt_table[i].prev = 0;
@@ -514,8 +514,8 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
 void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
     /* ECE552 Assignment 4 - BEGIN CODE*/
     md_addr_t PC = get_PC();
-    int index = (pc >> 3) % (cp->table_size);
-    struct rpt_entry *check = cp->rpt_table[index];
+    int index = (PC >> 3) % (cp->table_size);
+    struct rpt_entry check = cp->rpt_table[index];
     //if tag!=pc update the entry
     if (check.tag != PC || check.tag == 0) {
         check.tag = PC;
@@ -524,42 +524,43 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
     }        //
     else {
         //if current adrress -privious address != stride then update information
-        if (addr - check.prev != check->stride) {
+        if (addr - check.prev != check.stride) {
             //checking the information of do we need to change the stride value
-            if (check->state == initial) {
-                check->state = transient;
-                check->stride = addr - check.prev;
-            } else if (check->state == transient) {
-                check->state = nopred;
-                check->stride = addr - check.prev;
-            } else if (check->state == steady) {
-                check->state = initial;
+            if (check.state == initial) {
+                check.state = transient;
+                check.stride = addr - check.prev;
+            } else if (check.state == transient) {
+                check.state = nopred;
+                check.stride = addr - check.prev;
+            } else if (check.state == steady) {
+                check.state = initial;
 
-            } else if (check->state == nopred) {
-                check->stride = addr - check.prev;
+            } else if (check.state == nopred) {
+                check.stride = addr - check.prev;
             }
 
             if (check.state != nopred) {
-                if (cache_probe(cp, addr + check->stride) == 0)
-                    cache_access(cp, Read, CACHE_BADDR(cp, addr + check->stride), NULL, cp->bsize, 0, NULL, NULL, 1);
+                if (cache_probe(cp, addr + check.stride) == 0)
+                    cache_access(cp, Read, CACHE_BADDR(cp, addr + check.stride), NULL, cp->bsize, 0, NULL, NULL, 1);
             }
         } else {
-            if (check->state == initial) {
-                check->state = steady;
-            } else if (check->state == transient) {
-                check->state = steady;
-            } else if (check->state == nopred) {
-                check->state = transient;
+            if (check.state == initial) {
+                check.state = steady;
+            } else if (check.state == transient) {
+                check.state = steady;
+            } else if (check.state == nopred) {
+                check.state = transient;
             }
             if (check.state != nopred) {
-                if (cache_probe(cp, addr + check->stride) == 0)
-                    cache_access(cp, Read, CACHE_BADDR(cp, addr + check->stride), NULL, cp->bsize, 0, NULL, NULL, 1);
+                if (cache_probe(cp, addr + check.stride) == 0)
+                    cache_access(cp, Read, CACHE_BADDR(cp, addr + check.stride), NULL, cp->bsize, 0, NULL, NULL, 1);
             }
 
         }
     }
 
-    check->prev=addr;
+    check.prev=addr;
+    cp->rpt_table[index]=check;
     /* ECE552 Assignment 4 - END CODE*/
 }
 
