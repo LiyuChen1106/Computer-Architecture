@@ -113,21 +113,22 @@ enum cache_policy {
 
 
 
-enum stride_state {
+enum rstate {
 	initial,
 	transient,
 	steady,
-	none
+	nopred
 };
 
-typedef struct reference_predictor_table_entry
+struct rpt_entry
 {
 	md_addr_t tag;
 	md_addr_t prev;
-	int stride;
-	enum stride_state state;
+
+	enum rstate state;
+        int stride;
 	
-} entry;
+};
 
 
 /* ECE552 Assignment 4 - END CODE*/
@@ -210,8 +211,10 @@ struct cache_t
   
   /* ECE552 Assignment 4 - BEGIN CODE*/
 	//for the stride prefetcher
-	int stride_table_entries;
-	entry *stride_prefetch_table;
+	int table_size;
+	rpt_entry *rpt_table;
+        
+  /* ECE552 Assignment 4 - END CODE*/
 
   /* bus resource */
   tick_t bus_free;		/* time when bus to next level of cache is
