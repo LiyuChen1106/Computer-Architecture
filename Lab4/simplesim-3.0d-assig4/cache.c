@@ -515,6 +515,7 @@ cache_reg_stats(struct cache_t *cp,	/* cache instance */
 
 
 }
+md_addr_t get_PC();
 
 /* Next Line Prefetcher */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
@@ -613,7 +614,7 @@ void generate_prefetch(struct cache_t *cp, md_addr_t addr) {
 
 }
 
-md_addr_t get_PC();
+
 
 /* print cache stats */
 void
