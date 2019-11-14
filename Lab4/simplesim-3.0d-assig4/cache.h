@@ -212,7 +212,7 @@ struct cache_t
   /* ECE552 Assignment 4 - BEGIN CODE*/
 	//for the stride prefetcher
 	int table_size;
-	rpt_entry *rpt_table;
+	struct rpt_entry *rpt_table;
         
   /* ECE552 Assignment 4 - END CODE*/
 
