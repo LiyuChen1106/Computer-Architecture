@@ -195,7 +195,7 @@ update_way_list(struct cache_set_t *set, /* set contained way chain */
         assert(set->way_head == blk && set->way_tail == blk);
         /* Head/Tail order already */
         return;
-    }        /* else, more than one element in the list */
+    }/* else, more than one element in the list */
     else if (!blk->way_prev) {
         assert(set->way_head == blk && set->way_tail != blk);
         if (where == Head) {
@@ -398,8 +398,17 @@ cache_create(char *name, /* name of the cache */
             cp->rpt_table[i].stride = 0;
         }
 
-    }
 
+        cp->deltable = (struct delta_cor_entry *) malloc(128 * sizeof (struct delta_cor_entry));
+        for (int i = 0; i < 128; i++) {
+            cp->deltable[i].position = 0;
+            cp->deltable[i].tag = 0;
+            for (int j = 0; j < 16; j++) {
+                cp->deltable[i].check[j] = 0;
+            }
+        }
+    }
+    /* ECE552 Assignment 4 - END CODE*/
 
     return cp;
 }
@@ -495,10 +504,12 @@ cache_reg_stats(struct cache_t *cp, /* cache instance */
 
 }
 md_addr_t get_PC();
+
 /* Next Line Prefetcher */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
-    int blocksize = cp->bsize;
+
     /* ECE552 Assignment 4 - BEGIN CODE*/
+    int blocksize = cp->bsize;
     if (cache_probe(cp, addr + blocksize) == 0) {
         cache_access(cp, Read, CACHE_BADDR(cp, addr + blocksize), NULL, cp->bsize, 0, NULL, NULL, 1);
     }
@@ -506,8 +517,87 @@ void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
 }
 
 /* Open Ended Prefetcher */
+//delta correlation
+
 void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
-    ;
+    /* ECE552 Assignment 4 - BEGIN CODE*/
+    md_addr_t PC = get_PC();
+    int index = (PC >> 3) % 128;
+    struct delta_cor_entry * entry = &(cp->deltable[index]);
+    if (entry->tag != PC || entry->tag == 0) {
+        entry->tag = PC;
+        entry->fetch = 0;
+        for (int i = 0; i < 16; i++) {
+            entry->check[i] = 0;
+        }
+    } else if (addr != entry->prev) {
+        entry->check[entry->position] = addr - entry->prev;
+
+        //find corresponding update address;
+        int check1 = entry->check[entry->position];
+        int check2 = entry->check[(entry->position + 15) % 16];
+        int delindex = (entry->position + 14) % 16;
+        md_addr_t address = entry->prev;
+        md_addr_t last = 0;
+        md_addr_t fap[16];
+        int endpoint = 0;
+        while (delindex != entry->position) {
+            if (entry->check[delindex] == check1 && entry->check[(delindex + 15) % 16] == check2) {
+                int i = (delindex + 15) % 16;
+
+                while (i != (entry->position + 1) % 16) {
+                    address += entry->check[i];
+                    if (CACHE_BADDR(cp, address) != last) {
+                        fap[endpoint] = address;
+                        last = address;
+                        endpoint = endpoint + 1;
+                    }
+                    i = (i + 1) % 16;
+                }
+
+
+            }
+
+            if (endpoint != 0)
+                break;
+            
+            delindex=(delindex+14)%16;
+        }
+        if(endpoint!=0){
+            //doing the prefetch
+            md_addr_t prefetch[16];
+            for(int i=0;i<16;i++){
+                prefetch[i]=0;
+            }
+           // int startpoint=0;
+            int posi=0;
+            for(int i=0;i<endpoint;i++){
+                   // if(fap[i]==entry->fetch)
+                       // startpoint=posi;
+                    if(cache_probe(cp,fap[i])==0){
+                        prefetch[posi]=fap[i];
+                        entry->fetch=prefetch[posi];
+                        posi=posi+1;
+                    }
+                 
+            }
+            for(int i=0;i<16;i++){
+                if(prefetch[i]!=0)
+                cache_access(cp,Read,CACHE_BADDR(cp,prefetch[i]),NULL,cp->bsize,0,NULL,NULL,1);
+            }
+            
+        }
+
+
+
+        entry->position = (entry->position + 1) % 16;
+
+    }
+
+    entry->prev = addr;
+
+    /* ECE552 Assignment 4 - END CODE*/
+
 }
 
 /* Stride Prefetcher */
@@ -521,7 +611,7 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
         check.tag = PC;
         check.state = initial;
         check.stride = 0;
-    }        //
+    }//
     else {
         //if current adrress -privious address != stride then update information
         if (addr - check.prev != check.stride) {
@@ -559,8 +649,8 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
         }
     }
 
-    check.prev=addr;
-    cp->rpt_table[index]=check;
+    check.prev = addr;
+    cp->rpt_table[index] = check;
     /* ECE552 Assignment 4 - END CODE*/
 }
 
@@ -586,8 +676,6 @@ void generate_prefetch(struct cache_t *cp, md_addr_t addr) {
     }
 
 }
-
-
 
 /* print cache stats */
 void
