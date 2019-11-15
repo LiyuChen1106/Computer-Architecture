@@ -399,7 +399,10 @@ cache_create(char *name, /* name of the cache */
         }
 
 
-        cp->deltable = (struct delta_cor_entry *) malloc(128 * sizeof (struct delta_cor_entry));
+
+    }
+    else if(prefetch_type==2){
+                cp->deltable = (struct delta_cor_entry *) malloc(128 * sizeof (struct delta_cor_entry));
         for (int i = 0; i < 128; i++) {
             cp->deltable[i].position = 0;
             cp->deltable[i].tag = 0;
