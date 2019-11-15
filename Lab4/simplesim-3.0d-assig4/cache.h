@@ -130,6 +130,13 @@ struct rpt_entry
 	
 };
 
+struct delta_cor_entry{
+    md_addr_t tag;
+    md_addr_t prev;
+    md_addr_t fetch;
+    int check[16];
+    int position;
+};
 
 /* ECE552 Assignment 4 - END CODE*/
 
@@ -214,6 +221,8 @@ struct cache_t
 	int table_size;
 	struct rpt_entry *rpt_table;
         
+        //for delta corrlate 
+        struct delta_cor_entry *deltable;
   /* ECE552 Assignment 4 - END CODE*/
 
   /* bus resource */
