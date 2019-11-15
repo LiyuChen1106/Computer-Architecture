@@ -572,15 +572,10 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
             for(int i=0;i<16;i++){
                 prefetch[i]=0;
             }
-           // int startpoint=0;
-            int posi=0;
             for(int i=0;i<endpoint;i++){
-                   // if(fap[i]==entry->fetch)
-                       // startpoint=posi;
                     if(cache_probe(cp,fap[i])==0){
-                        prefetch[posi]=fap[i];
-                        entry->fetch=prefetch[posi];
-                        posi=posi+1;
+                        prefetch[i]=fap[i];
+                        entry->fetch=prefetch[i];
                     }
                  
             }
