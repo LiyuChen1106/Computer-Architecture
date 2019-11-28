@@ -536,6 +536,171 @@ getDirectoryEntry(address).Sharers);
   // =============================================================================
 
   /* ECE552: Complete this section here */
+	/* ECE552 Assignment 5 - BEGIN CODE*/
+
+  // for transitions i
+  transition(I,GETS,IS_D){
+    // try to fetch data from memory
+    vv_allocateTBEFromRequestNet;
+    ars2_addRequestorToSharers;
+    qf_queueMemoryFetchRequest;
+    i_popIncomingRequestQueue;
+}
+
+    transition(I,{PUTS_Last,PUTS_NotLast, PUTM_NotOwner}){
+    a_sendWriteBackAck;
+    i_popIncomingRequestQueue;
+} 
+
+  transition(I,GETM,IM_D){
+    vv_allocateTBEFromRequestNet;
+    e_ownerIsRequestor;
+    qf_queueMemoryFetchRequest;
+    i_popIncomingRequestQueue;
+}
 
 
+
+
+
+// for transition S
+  transition(S,GETS){
+    ds_sendSharedData;
+    ars2_addRequestorToSharers;
+    i_popIncomingRequestQueue;
+}
+
+    transition(S,GETM,M){
+//give requestor data, make sharer inv, owner to req
+    ds_sendSharedData;
+    fwm_sendFwdInvToSharersMinusRequestor;
+     
+    cs_clearSharers;
+    e_ownerIsRequestor;
+
+    i_popIncomingRequestQueue;
+
+}
+
+  transition (S, {PUTS_NotLast, PUTM_NotOwner}) {
+    //delete share req, send putack
+    kk_removeRequestSharer;
+    a_sendWriteBackAck;
+    i_popIncomingRequestQueue;
+}    
+
+    transition(S, PUTS_Last, I){
+    kk_removeRequestSharer;
+    a_sendWriteBackAck;
+    i_popIncomingRequestQueue;
+}
+
+
+//for transition M
+  transition (M, GETS, MS_D) {
+    //fwd_gets    put req owner to shares     clear owners
+    vv_allocateTBEFromRequestNet; 
+    f_forwardRequest;
+    ars2_addRequestorToSharers;
+    aos_addOwnertoSharers;
+    c_clearOwner; 
+    i_popIncomingRequestQueue;
+}
+
+transition (M, GETM) {
+    f_forwardRequest;
+    c_clearOwner;
+    e_ownerIsRequestor;
+    i_popIncomingRequestQueue; 
+}
+
+transition(M, {PUTS_NotLast, PUTS_Last, PUTM_NotOwner}){
+    a_sendWriteBackAck;
+    i_popIncomingRequestQueue;
+}
+
+transition (M, PUTM_Owner, MI_A) {
+    vv_allocateTBEFromRequestNet;
+    lq_queueMemoryWBRequest;
+    pl_writeDataToDirectory;
+    c_clearOwner;
+    i_popIncomingRequestQueue;
+}
+
+
+
+
+//for transition IS_D
+
+transition(IS_D, Memory_Data, S){ 
+    d_sendData;
+    w_deallocateTBE;
+    qm_popMemQueue;
+} 
+
+transition(IS_D, {GETS, GETM}){
+    z_stall;
+}
+
+
+//for transition IM_D
+transition(IM_D, Memory_Data, M){
+    d_sendData;
+    w_deallocateTBE;
+    qm_popMemQueue;
+	}
+
+transition(IM_D, {GETM, GETS, PUTM_NotOwner}){
+    z_stall;
+}
+
+
+
+
+//for transition MS_D
+
+transition(MS_D, {PUTS_NotLast, PUTM_Owner, PUTM_NotOwner}){
+    kk_removeRequestSharer;
+    a_sendWriteBackAck;
+    i_popIncomingRequestQueue;
+}
+
+	
+
+transition(MS_D, Data, MS_A){
+    lq2_queueMemoryWBRequest;
+    pl2_writeDataToDirectory;
+    pr_popIncomingResponseQueue;
+}
+	
+transition(MS_D, {GETS, GETM, PUTS_Last}){
+    z_stall;
+}
+
+//for transition MI_A
+  transition(MI_A, Memory_Ack, I){
+    la_sendWriteBackAck;
+    w_deallocateTBE;    
+    qm_popMemQueue;
+  }
+
+  transition (MI_A, {GETM,GETS, PUTM_Owner, PUTM_NotOwner, PUTS_NotLast, PUTS_Last}) {
+     z_stall;
+  }
+
+
+
+//for transition ms_a
+
+transition(MS_A, Memory_Ack, S){
+    w_deallocateTBE;    
+    qm_popMemQueue;
+}
+
+transition(MS_A, {GETM,GETS, PUTM_Owner, PUTM_NotOwner, PUTS_NotLast, PUTS_Last}){
+    z_stall;
+}
+
+
+	/* ECE552 Assignment 5 - END CODE*/
 }
