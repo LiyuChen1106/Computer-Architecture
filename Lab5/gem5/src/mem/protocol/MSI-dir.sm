@@ -46,7 +46,13 @@ machine(Directory, "Directory protocol")
     //========================
     //ECE552: Transient States
     //========================
+    S, AccessPermission:Read_Only, desc="shared block";
 
+    MS_D, AccessPermission:Busy, desc="Transition state m->s, waiting for data reply";
+    MS_A, AccessPermission:Busy, desc="Transition state m->S, waiting for data reply";
+    MI_A, AccessPermission:Busy, desc="Transition state m->i, waiting for data reply";
+    IM_D, AccessPermission:Busy, desc="Transition state i->m, waiting for data reply";
+    IS_D, AccessPermission:Busy, desc="Transition state I->S, waiting for data reply";
     /* ECE552: Complete this section here */
   }
 
